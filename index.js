@@ -1,15 +1,47 @@
+const request = require('request');
+const cheerio = require('cheerio');
+const chalk = require('chalk');
+const fs = require('fs');
+const config = require('./config/config');
+const svgBuild = require('./svgConverter');
 
+const weatherMap = 'http://api.openweathermap.org/data/2.5/weather?zip=78723,us&APPID=' + config.apiKey;
 
+function makeCall(url, callback) {
+    const options = {
+        url: url
+    }
+    request.get(options, callback);
+}
 
+function firstCalls(error, response, body) {    
+    let jsonBody = JSON.parse(body);
 
+    console.log(chalk.green('body'), chalk.blue(body));
 
+    let main = jsonBody.weather[0].main;
+    let desc = jsonBody.weather[0].description;
+    let weatherId = jsonBody.weather[0].id;
+    let currentTemp = jsonBody.main.temp;
+    let fTemp = convertToF(currentTemp);
 
+    console.log(chalk.green('main'), chalk.blue(main));
+    console.log(chalk.green('desc'), chalk.blue(desc));    
+    console.log(chalk.green('kelvin temp'), chalk.blue(currentTemp));
+    console.log(chalk.green('f temp'), chalk.blue(fTemp));
 
+    let svg = svgBuild.build(fTemp, main, weatherId);
+    
+    fs.writeFile('output/test.svg', svg, (err) => {
+        if (err) console.log(erff);
+        console.log('done writing');
+    });
 
+}
 
-
-
-
+function convertToF(temp) {
+    return Math.floor(9/5*(temp -273)+32);
+}
 
 function convertSvg(svg) {
     // convert 
@@ -19,3 +51,8 @@ function convertSvg(svg) {
         }
     });
 }
+
+
+console.log(chalk.cyan('starting'), chalk.red(weatherMap));
+makeCall(weatherMap, firstCalls);
+
