@@ -17,26 +17,21 @@ function makeCall(url, callback) {
 function firstCalls(error, response, body) {    
     let jsonBody = JSON.parse(body);
 
-    console.log(chalk.green('body'), chalk.blue(body));
+    // console.log(chalk.green('body'), chalk.blue(body));
 
-    let main = jsonBody.weather[0].main;
+    let shortDescription = jsonBody.weather[0].main;
     let desc = jsonBody.weather[0].description;
-    let weatherId = jsonBody.weather[0].id;
+    let weatherId = parseInt(jsonBody.weather[0].id);
     let currentTemp = jsonBody.main.temp;
-    let fTemp = convertToF(currentTemp);
+    let temp = convertToF(currentTemp);
 
-    console.log(chalk.green('main'), chalk.blue(main));
-    console.log(chalk.green('desc'), chalk.blue(desc));    
-    console.log(chalk.green('kelvin temp'), chalk.blue(currentTemp));
-    console.log(chalk.green('f temp'), chalk.blue(fTemp));
+    // console.log(chalk.green('main'), chalk.blue(shortDescription));
+    // console.log(chalk.green('desc'), chalk.blue(desc));
+    // console.log(chalk.green('weatherId'), chalk.blue(weatherId));        
+    // console.log(chalk.green('kelvin temp'), chalk.blue(currentTemp));
+    // console.log(chalk.green('f temp'), chalk.blue(fTemp));
 
-    let svg = svgBuild.build(fTemp, main, weatherId);
-    
-    fs.writeFile('output/test.svg', svg, (err) => {
-        if (err) console.log(erff);
-        console.log('done writing');
-    });
-
+    buildSvg(temp, shortDescription, weatherId);
 }
 
 function convertToF(temp) {
@@ -52,7 +47,13 @@ function convertSvg(svg) {
     });
 }
 
+function buildSvg(temp, shortDescription, weatherId) {
+    let svg = svgBuild.build(temp, shortDescription, weatherId);
+    fs.writeFile('output/test.svg', svg, (err) => {
+        if (err) console.log(erff);
+        console.log('done writing');
+    });
+}
 
-console.log(chalk.cyan('starting'), chalk.red(weatherMap));
-makeCall(weatherMap, firstCalls);
 
+let currentWeather = makeCall(weatherMap, firstCalls);
