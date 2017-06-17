@@ -2,17 +2,16 @@ const fs = require('fs');
 const cheerio = require('cheerio');
 const chalk = require('chalk');
 
-function build(currentTemp, shortDescription, weatherId) {
+function build(currentTemp, shortDescription, weatherId, forecast) {
 
     let weatherImage = getSvgFromWeatherId(weatherId);
-    console.log('weatherImage', chalk.green(weatherImage));
-
+    
     return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
 
             <g id="outside">
 
                 <svg xmlns="http://www.w3.org/2000/svg" x="10" y="40" height="300" width="300" viewBox="0 0 100 100">
-                    <path d="${weatherImage}" />
+                    ${weatherImage}
                 </svg>
 
                 <text x="450" y="128" font-family="Verdana" 
@@ -58,10 +57,14 @@ function getSvgFromWeatherId(weatherId) {
 function extractPathFromIcon(path) {
 
     let icon = fs.readFileSync(path, 'utf8');
+    
+    if (path === 'icons/park.svg' || path === 'icons/gumballs.svg') {
+        return icon;
+    } 
+
     let $ = cheerio.load(icon);
-
     let ddd = $('path').attr('d');
-
+    ddd = `<path d="${ddd}" />`;
     return ddd;
 }
 
@@ -140,7 +143,7 @@ function getIconFromWeatherId(weatherId) {
 
         // dunno man
         default:
-            return 'grey_national-parks.svg';
+            return 'park.svg';
 
 
     }
