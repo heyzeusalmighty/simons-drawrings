@@ -5,10 +5,10 @@ const fs = require('fs');
 const Promise = require('bluebird');
 const config = require('./config/config');
 const svgBuild = require('./svgConverter');
+const rp = require('request-promise');
 
-
-const weatherMap = 'http://api.openweathermap.org/data/2.5/weather?zip=78723,us&APPID=' + config.apiKey;
-const forecast = 'http://api.openweathermap.org/data/2.5/forecast?zip=78723,us&APPID=' + config.apiKey;
+const current_url = 'http://api.openweathermap.org/data/2.5/weather?zip=78723,us&APPID=' + config.apiKey;
+const forecast_url = 'http://api.openweathermap.org/data/2.5/forecast?zip=78723,us&APPID=' + config.apiKey;
 
 function makeCall(url, callback) {
     const options = {
@@ -17,10 +17,30 @@ function makeCall(url, callback) {
     request.get(options, callback);
 }
 
-function currentWeatherCall(error, response, body) {    
-    let jsonBody = JSON.parse(body);
 
+function makeBothCalls(cb) {
+
+    // get current
+    rp({uri: current_url})
+    .then(current => {
+        console.log('current ::::::::::::::::::::::');
+        console.log(current);
+        rp({uri: forecast_url})
+        .then(forecast => {
+
+            let currentWeather = currentWeatherCall(current);
+            console.log(currentWeather);
+
+        });
+    });
+}
+
+
+function currentWeatherCall(body) {    
+    
     console.log(chalk.green('body'), chalk.blue(body));
+
+    let jsonBody = JSON.parse(body);
 
     let shortDescription = jsonBody.weather[0].main;
     let desc = jsonBody.weather[0].description;
@@ -37,7 +57,7 @@ function currentWeatherCall(error, response, body) {
     // buildSvg(temp, shortDescription, weatherId);
 }
 
-function forecastCall(err, response, body) {
+function forecastCall(body) {
     let jsonBody = JSON.parse(body);
 
     let forecast = [];
@@ -77,6 +97,15 @@ function convertToF(temp) {
     return Math.floor(9/5*(temp -273)+32);
 }
 
+function buildSvg(temp, shortDescription, weatherIdn) {
+    let svg = svgBuild.build(temp, shortDescription, weatherId);
+    fs.writeFile('output/test.svg', svg, (err) => {
+        if (err) console.log(erff);
+        console.log('done writing');
+    });
+}
+
+
 function convertSvg(svg) {
     // convert 
     require('svg2png')('output/dino.svg', 'output/dino.png', function(err) {
@@ -86,15 +115,9 @@ function convertSvg(svg) {
     });
 }
 
-function buildSvg(temp, shortDescription, weatherIdn) {
-    let svg = svgBuild.build(temp, shortDescription, weatherId);
-    fs.writeFile('output/test.svg', svg, (err) => {
-        if (err) console.log(erff);
-        console.log('done writing');
-    });
-}
+makeBothCalls();
 
-let currentWeather = makeCall(forecast, forecastCall);
+// let currentWeather = makeCall(forecast, forecastCall);
 // let test = svgBuild.extractPathFromIcon('icons/gumballs.svg');
 // console.log(test);
 // buildSvg(78, 'misty', 666);
