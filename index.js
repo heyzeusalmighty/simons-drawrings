@@ -55,5 +55,7 @@ function buildSvg(temp, shortDescription, weatherId) {
     });
 }
 
-
-let currentWeather = makeCall(weatherMap, firstCalls);
+// let currentWeather = makeCall(weatherMap, firstCalls);
+// let test = svgBuild.extractPathFromIcon('icons/gumballs.svg');
+// console.log(test);
+buildSvg(78, 'misty', 666);
