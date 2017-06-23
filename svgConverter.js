@@ -3,61 +3,93 @@ const cheerio = require('cheerio');
 const chalk = require('chalk');
 
 function build(currentWeather, forecast) {
-    let { temp, shortDescription, weatherId } = currentWeather;
-    console.log(currentWeather);
-    let weatherImage = getSvgFromWeatherId(weatherId);
     
+    let current = buildCurrentWeather(currentWeather);
     let svgForecast;
     let startingX = 75;
     forecast.forEach(day => {
         day.svg = getSvgFromWeatherId(day.weatherId);
-        svgForecast += buildForecast(day, startingX, 390);
+        svgForecast += buildForecast(day, startingX, 370);
         startingX += 100;
     });
+
+    let inside = buildInsideTemps();
     
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
-
+    return `
+        <svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
             <g id="outside">
-
-                <svg xmlns="http://www.w3.org/2000/svg" x="10" y="40" height="300" width="300" viewBox="0 0 100 100">
-                    ${weatherImage}
-                </svg>
-
-                <text x="450" y="128" font-family="Verdana" 
-                    font-size="128" 
-                    text-anchor="middle" 
-                    alignment-baseline="auto">
-                    ${temp}
-                </text>
-
-                <text x="450" y="250" font-family="Verdana" font-size="72" text-anchor="middle">
-                    ${shortDescription}
-                </text>
+                ${current}
             </g>
             <g id="forecast">
                 ${svgForecast}
             </g>
             <g id="inside">
-                
-                <text x="75" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Living</text>
-                <text x="75" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
-                <text x="75" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
-
-                <text x="225" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Guest</text>
-                <text x="225" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
-                <text x="225" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
-
-                <text x="375" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Master</text>
-                <text x="375" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
-                <text x="375" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
-
-                <text x="525" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Office</text>
-                <text x="525" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
-                <text x="525" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
-
+                ${inside}
             </g>
-        </svg>`;
+        </svg>
+        `;
 }
+
+
+function buildForecast(day, x, y) {  
+    return `
+        <svg xmlns="http://www.w3.org/2000/svg" x="${x}" y="${y}" height="50" width="50" viewBox="0 0 100 100">
+            ${day.svg}
+        </svg>
+        <text x="${x + 5}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.min}
+        </text>
+        <text x="${ x + 40}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.max}
+        </text>
+        <text x="${x + 20}" y="${y + 95}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.date}
+        </text>
+    `;
+}
+
+function buildCurrentWeather(currentWeather) {
+    let { temp, shortDescription, weatherId } = currentWeather;
+    let weatherImage = getSvgFromWeatherId(weatherId);
+
+    return `
+        <svg xmlns="http://www.w3.org/2000/svg" x="10" y="40" height="300" width="300" viewBox="0 0 100 100">
+            ${weatherImage}
+        </svg>
+
+        <text x="450" y="128" font-family="Verdana" 
+            font-size="128" 
+            text-anchor="middle" 
+            alignment-baseline="auto">
+            ${temp}
+        </text>
+
+        <text x="450" y="250" font-family="Verdana" font-size="72" text-anchor="middle">
+            ${shortDescription}
+        </text>
+    `;
+}
+
+function buildInsideTemps() {
+    return `
+        <text x="75" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Living</text>
+        <text x="75" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
+        <text x="75" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
+
+        <text x="225" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Guest</text>
+        <text x="225" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
+        <text x="225" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
+
+        <text x="375" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Master</text>
+        <text x="375" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
+        <text x="375" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
+
+        <text x="525" y="525" font-family="Verdana" font-size="20" text-anchor="middle">Office</text>
+        <text x="525" y="600" font-family="Verdana" font-size="72" text-anchor="middle">75</text>
+        <text x="525" y="675" font-family="Verdana" font-size="48" text-anchor="middle">25</text>
+    `;
+}
+
 
 
 function getSvgFromWeatherId(weatherId) {
@@ -77,23 +109,6 @@ function extractPathFromIcon(path) {
     let ddd = $('path').attr('d');
     ddd = `<path d="${ddd}" />`;
     return ddd;
-}
-
-function buildForecast(day, x, y) {  
-    return `
-        <svg xmlns="http://www.w3.org/2000/svg" x="${x}" y="${y}" height="50" width="50" viewBox="0 0 100 100">
-            ${day.svg}
-        </svg>
-        <text x="${x + 5}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
-            ${day.min}
-        </text>
-        <text x="${ x + 40}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
-            ${day.max}
-        </text>
-        <text x="${x + 20}" y="${y + 95}" font-family="Verdana" font-size="20" text-anchor="middle">
-            ${day.date}
-        </text>
-    `;
 }
 
 
