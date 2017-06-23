@@ -5,6 +5,28 @@ const chalk = require('chalk');
 function build(currentTemp, shortDescription, weatherId, forecast) {
 
     let weatherImage = getSvgFromWeatherId(weatherId);
+    // max: day.main.temp_max,
+    // min: day.main.temp_min,
+    // weatherId: day.weather[0].id,
+    // shortDescription: day.weather[0].main,
+    // date: getDate(date)
+
+    
+
+    let svgForecast;
+    let startingX = 75;
+    forecast.forEach(day => {
+        day.svg = getSvgFromWeatherId(day.weatherId);
+        svgForecast += buildForecast(day, startingX, 390);
+        startingX += 100;
+    });
+
+
+
+    // let dayOne = buildForecast(forecast[0], 10, 0);
+    // let dayTwo = buildForecast(forecast[1], 110, 0);
+    // console.log(dayOne);
+
     
     return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
 
@@ -24,6 +46,9 @@ function build(currentTemp, shortDescription, weatherId, forecast) {
                 <text x="450" y="250" font-family="Verdana" font-size="72" text-anchor="middle">
                     ${shortDescription}
                 </text>
+            </g>
+            <g id="forecast">
+                ${svgForecast}
             </g>
             <g id="inside">
                 
@@ -50,7 +75,7 @@ function build(currentTemp, shortDescription, weatherId, forecast) {
 
 function getSvgFromWeatherId(weatherId) {
     let icon = getIconFromWeatherId(weatherId);
-    console.log('my icon => ', chalk.green(icon));
+    // console.log('my icon => ', chalk.green(icon));
     return extractPathFromIcon(`icons/${icon}`);
 }
 
@@ -68,12 +93,33 @@ function extractPathFromIcon(path) {
     return ddd;
 }
 
+function buildForecast(day, x, y) {
+    // x
+    // 10, 15, 50, 30
+    // 400, 470, 495
+
+    return `
+        <svg xmlns="http://www.w3.org/2000/svg" x="${x}" y="${y}" height="50" width="50" viewBox="0 0 100 100">
+            ${day.svg}
+        </svg>
+        <text x="${x + 5}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.min}
+        </text>
+        <text x="${ x + 40}" y="${y + 70}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.max}
+        </text>
+        <text x="${x + 20}" y="${y + 95}" font-family="Verdana" font-size="20" text-anchor="middle">
+            ${day.date}
+        </text>
+    `;
+}
+
 
 function getIconFromWeatherId(weatherId) {
-    console.log(chalk.blue('weatherid'), chalk.green(weatherId));
+    // console.log(chalk.blue('weatherid'), chalk.green(weatherId));
 
-    console.log(typeof weatherId);
-    console.log('equals 800', (weatherId === 800));
+    // console.log(typeof weatherId);
+    // console.log('equals 800', (weatherId === 800));
 
     switch(true) {
 

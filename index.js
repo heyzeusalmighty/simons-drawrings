@@ -23,14 +23,19 @@ function makeBothCalls(cb) {
     // get current
     rp({uri: current_url})
     .then(current => {
-        console.log('current ::::::::::::::::::::::');
-        console.log(current);
+        // console.log('current ::::::::::::::::::::::');
+        // console.log(current);
         rp({uri: forecast_url})
         .then(forecast => {
 
+            // console.log(chalk.red('forecast'), chalk.green(forecast));
             let currentWeather = currentWeatherCall(current);
+            let fourCast = forecastCallProcessing(forecast);
             console.log(currentWeather);
 
+
+            //temp, shortDescription, weatherIdn, forecast            
+            buildSvg(currentWeather.temp, currentWeather.shortDescription, currentWeather.weatherId, fourCast);
         });
     });
 }
@@ -38,7 +43,7 @@ function makeBothCalls(cb) {
 
 function currentWeatherCall(body) {    
     
-    console.log(chalk.green('body'), chalk.blue(body));
+    // console.log(chalk.green('body'), chalk.blue(body));
 
     let jsonBody = JSON.parse(body);
 
@@ -47,6 +52,7 @@ function currentWeatherCall(body) {
     let weatherId = parseInt(jsonBody.weather[0].id);
     let currentTemp = jsonBody.main.temp;
     let temp = convertToF(currentTemp);
+    return { temp, shortDescription, weatherId };
 
     // console.log(chalk.green('main'), chalk.blue(shortDescription));
     // console.log(chalk.green('desc'), chalk.blue(desc));
@@ -57,34 +63,44 @@ function currentWeatherCall(body) {
     // buildSvg(temp, shortDescription, weatherId);
 }
 
-function forecastCall(body) {
+function forecastCallProcessing(body) {
     let jsonBody = JSON.parse(body);
 
     let forecast = [];
-    // console.log(chalk.green('body'), chalk.blue(body));
+    
     jsonBody.list.forEach(day => {
 
         let date = new Date(day.dt * 1000);        
         
+
+
         if (date.toString().indexOf('13:00:00') > -1) {
-            console.log(chalk.green('dt'), chalk.blue(date.toString()));
-            console.log(chalk.green('main.temp_max'), chalk.blue(day.main.temp_max));
-            console.log(chalk.green('main.temp_min'), chalk.blue(day.main.temp_min));
-            console.log(chalk.green('weather[0].id'), chalk.blue(day.weather[0].id));
-            console.log(chalk.green('weather[0].main'), chalk.blue(day.weather[0].main));
-            console.log(chalk.red(getDate(date), day.dt_txt));
+
+            console.log(chalk.green('body'), chalk.blue(JSON.stringify(day.main)));
+
+            let max = convertToF(day.main.temp_max);
+            let min = convertToF(day.main.temp_min);
+            let superDate = getDate(date);
+
+            // console.log(chalk.green('dt'), chalk.blue(date.toString()));
+            // console.log(chalk.green('main.temp_max'), chalk.blue(max));
+            // console.log(chalk.green('main.temp_min'), chalk.blue(min));
+            // console.log(chalk.green('weather[0].id'), chalk.blue(day.weather[0].id));
+            // console.log(chalk.green('weather[0].main'), chalk.blue(day.weather[0].main));
+            // console.log(chalk.red(superDate));
             forecast.push({
-                max: day.main.temp_max,
-                min: day.main.temp_min,
+                max,
+                min,
                 weatherId: day.weather[0].id,
                 shortDescription: day.weather[0].main,
-                date: getDate(date)
+                date: superDate
             });
 
         }
 
-        return forecast;
     });
+
+    return forecast;
 }
 
 function getDate(date) {
@@ -97,8 +113,8 @@ function convertToF(temp) {
     return Math.floor(9/5*(temp -273)+32);
 }
 
-function buildSvg(temp, shortDescription, weatherIdn) {
-    let svg = svgBuild.build(temp, shortDescription, weatherId);
+function buildSvg(temp, shortDescription, weatherId, forecast) {
+    let svg = svgBuild.build(temp, shortDescription, weatherId, forecast);
     fs.writeFile('output/test.svg', svg, (err) => {
         if (err) console.log(erff);
         console.log('done writing');
