@@ -6,6 +6,7 @@ const Promise = require('bluebird');
 const config = require('./config/config');
 const svgBuild = require('./svgConverter');
 const rp = require('request-promise');
+const _ = require('lodash');
 
 const current_url = 'http://api.openweathermap.org/data/2.5/weather?zip=78723,us&APPID=' + config.apiKey;
 const forecast_url = 'http://api.openweathermap.org/data/2.5/forecast?zip=78723,us&APPID=' + config.apiKey;
@@ -19,32 +20,19 @@ function makeCall(url, callback) {
 
 
 function makeBothCalls(cb) {
-
-    // get current
     rp({uri: current_url})
-    .then(current => {
-        // console.log('current ::::::::::::::::::::::');
-        // console.log(current);
+    .then(current => {        
         rp({uri: forecast_url})
         .then(forecast => {
-
-            // console.log(chalk.red('forecast'), chalk.green(forecast));
             let currentWeather = currentWeatherCall(current);
-            let fourCast = forecastCallProcessing(forecast);
-            console.log(currentWeather);
-
-
-            //temp, shortDescription, weatherIdn, forecast            
-            buildSvg(currentWeather.temp, currentWeather.shortDescription, currentWeather.weatherId, fourCast);
+            let fourCast = forecastCallProcessing(forecast);          
+            buildSvg(currentWeather, fourCast);
         });
     });
 }
 
 
 function currentWeatherCall(body) {    
-    
-    // console.log(chalk.green('body'), chalk.blue(body));
-
     let jsonBody = JSON.parse(body);
 
     let shortDescription = jsonBody.weather[0].main;
@@ -53,50 +41,76 @@ function currentWeatherCall(body) {
     let currentTemp = jsonBody.main.temp;
     let temp = convertToF(currentTemp);
     return { temp, shortDescription, weatherId };
-
-    // console.log(chalk.green('main'), chalk.blue(shortDescription));
-    // console.log(chalk.green('desc'), chalk.blue(desc));
-    // console.log(chalk.green('weatherId'), chalk.blue(weatherId));        
-    // console.log(chalk.green('kelvin temp'), chalk.blue(currentTemp));
-    // console.log(chalk.green('f temp'), chalk.blue(fTemp));
-
-    // buildSvg(temp, shortDescription, weatherId);
 }
 
 function forecastCallProcessing(body) {
     let jsonBody = JSON.parse(body);
-
     let forecast = [];
     
     jsonBody.list.forEach(day => {
+        
+        let date = new Date(day.dt * 1000);
+        let simpleDate = getDate(date);
+        let dateAndHours = getDateAndTime(date);
+        // console.log(chalk.green(dateAndHours), chalk.blue(day.main.temp_min), chalk.red(day.main.temp_max));
 
-        let date = new Date(day.dt * 1000);        
+        let dIdx = _.findIndex(forecast, { 'date': simpleDate });
+        if (dIdx > -1) {
+            let max = convertToF(day.main.temp_max);
+            let min = convertToF(day.main.temp_min);
+            if (max > forecast[dIdx].max) 
+                forecast[dIdx].max = max;
+
+            if (min < forecast[dIdx].min)
+                forecast[dIdx].min = min;    
+
+            // console.log(chalk.cyan(forecast[dIdx].date), chalk.green(forecast[dIdx].max), chalk.yellow(max));
+
+            if (date.toString().indexOf('13:00:00') > -1) {
+                forecast[dIdx].weatherId = day.weather[0].id;
+                forecast[dIdx].shortDescription = day.weather[0].main;
+            }
+
+        } else {            
+            forecast.push({ 
+                date: simpleDate, 
+                max: convertToF(day.main.temp_max), 
+                min: convertToF(day.main.temp_min)
+            });
+        }
+
+        // if this date exists
+            // is written min lower?
+            // is written max higher?
+
+        // if date does not exist
+            // add date, min, max
+
+        // if time is 1 PM
+            // add weatherId & shortDescription
         
 
 
-        if (date.toString().indexOf('13:00:00') > -1) {
+        // if (forecast[])
 
-            console.log(chalk.green('body'), chalk.blue(JSON.stringify(day.main)));
 
-            let max = convertToF(day.main.temp_max);
-            let min = convertToF(day.main.temp_min);
-            let superDate = getDate(date);
+        // if (date.toString().indexOf('13:00:00') > -1) {
 
-            // console.log(chalk.green('dt'), chalk.blue(date.toString()));
-            // console.log(chalk.green('main.temp_max'), chalk.blue(max));
-            // console.log(chalk.green('main.temp_min'), chalk.blue(min));
-            // console.log(chalk.green('weather[0].id'), chalk.blue(day.weather[0].id));
-            // console.log(chalk.green('weather[0].main'), chalk.blue(day.weather[0].main));
-            // console.log(chalk.red(superDate));
-            forecast.push({
-                max,
-                min,
-                weatherId: day.weather[0].id,
-                shortDescription: day.weather[0].main,
-                date: superDate
-            });
+        //     // console.log(chalk.green('body'), chalk.blue(JSON.stringify(day.main)));
 
-        }
+        //     let max = convertToF(day.main.temp_max);
+        //     let min = convertToF(day.main.temp_min);
+        //     let superDate = getDate(date);
+
+        //     forecast.push({
+        //         max,
+        //         min,
+        //         weatherId: day.weather[0].id,
+        //         shortDescription: day.weather[0].main,
+        //         date: superDate
+        //     });
+
+        // }
 
     });
 
@@ -109,25 +123,22 @@ function getDate(date) {
     return `${month}/${day}`;
 }
 
+function getDateAndTime(date) {
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
+    let hour = date.getHours();
+    return `${month}/${day} - ${hour}`;
+}
+
 function convertToF(temp) {
     return Math.floor(9/5*(temp -273)+32);
 }
 
-function buildSvg(temp, shortDescription, weatherId, forecast) {
-    let svg = svgBuild.build(temp, shortDescription, weatherId, forecast);
+function buildSvg(currentWeather, forecast) {
+    let svg = svgBuild.build(currentWeather, forecast);
     fs.writeFile('output/test.svg', svg, (err) => {
         if (err) console.log(erff);
         console.log('done writing');
-    });
-}
-
-
-function convertSvg(svg) {
-    // convert 
-    require('svg2png')('output/dino.svg', 'output/dino.png', function(err) {
-        if(err) {
-            console.log('An error occurred during conversion: ', err);
-        }
     });
 }
 
